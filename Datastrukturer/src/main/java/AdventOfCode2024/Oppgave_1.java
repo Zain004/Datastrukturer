@@ -37,9 +37,10 @@ public class Oppgave_1 {
         List<Integer> rightList = List.of(4, 3, 5, 3, 9, 3);
 
         try {
-
+            int result = totalDistance(leftList, rightList);
+            System.out.println("Total avstand: " + result);
         } catch (IllegalArgumentException e) {
-
+                System.err.println("Feil ved beregning av total avstand: " + e.getMessage());
         }
     }
 }
