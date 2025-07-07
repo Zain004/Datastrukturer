@@ -80,19 +80,57 @@ public class Oppgave_7 {
         long targetValue = Long.parseLong(parts[0].trim());
         // Den andre delen forventes å være en kommaseparert liste av tall
         // Vi splitter på komma, konverterer hver streng til long, og samler dem i en liste
-        List<Long> numbers = Arrays.stream(parts[1].split(","))
+        List<Long> numbers = Arrays.stream(parts[1].trim().split(" "))
+                .map(String::trim)
                 .map(Long::parseLong)// Konverter hvert element til long
                 .collect(Collectors.toList()); // Samle i en liste
         // Kall en hjelpefunksjon isValid med målverdien og listen av tall
         // isValid returnerer true eller false basert på om ligningen er gyldig
         return isValid(targetValue, numbers);
     }
+    /**
+     * Rekursiv funksjon for å sjekke om en ligning er gyldig.
+     * Denne metoden bruker backtracking for å prøve alle mulige kombinasjoner av operatorer.
+     *
+     * @param targetValue  Målverdien som ligningen må evalueres til.
+     * @param numbers      Listen over tall i ligningen.
+     * @return `true` hvis ligningen er gyldig, `false` ellers.
+     */
+    private static boolean isValid(long targetValue, List<Long> numbers) {
+        return isValidRecurse(targetValue, numbers, 0, numbers.get(0));
+    }
+    /*
+    Den går fram og tilbake på java callstack til den finner en løsning
+     */
+    private static boolean isValidRecurse(long targetValue, List<Long> numbers, int index, long currentResult) {
+        if (index == numbers.size() - 1) {
+            return currentResult == targetValue;
+        }
+
+        if (isValidRecurse(targetValue, numbers, index + 1, currentResult + numbers.get(index + 1))) {
+            return true;
+        }
+        // Prøv multiplikasjon
+        return isValidRecurse(targetValue, numbers, index + 1, currentResult * numbers.get(index + 1));
+    }
 
     public static void main(String[] args) {
+        List<String> equations = List.of(
+                "190: 10 19",
+                "3267: 81 40 27",
+                "83: 17 5",
+                "156: 15 6",
+                "7290: 6 8 6 15",
+                "161011: 16 10 13",
+                "192: 17 8 14",
+                "21037: 9 7 18 13",
+                "292: 11 6 16 20"
+        );
 
+        long totalCalibrationResult = calculateTotalCalibrationResult(equations);
+        System.out.println("Totalt kalibreringsresultat: " + totalCalibrationResult); // Output: 3749
     }
 }
-
 
 
 
