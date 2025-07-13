@@ -170,6 +170,7 @@ public class Oppgave_10 {
 
     private static class Coordinate {
         private int row, col;
+
         public Coordinate(int row, int col) {
             this.row = row;
             this.col = col;
