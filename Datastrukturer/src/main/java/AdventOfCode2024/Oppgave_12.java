@@ -1,6 +1,6 @@
 package AdventOfCode2024;
 
-import java.util.Objects;
+import java.util.*;
 
 /*
 ## Oppgave: Hagegjerder
@@ -35,6 +35,20 @@ Gitt et kart over hageparseller, beregn den totale kostnaden
 
  */
 public class Oppgave_12 {
+    /**
+     * Beregner den totale prisen for å gjerde inn alle sammenhengende planteområder (regioner)
+     * på et gitt kart. Hver region består av tilstøtende (horisontalt eller vertikalt) parseller
+     * med samme plante-type, og prisen for å gjerde inn en region beregnes som:
+     * <br><code>pris = areal * omkrets</code>
+     *
+     * @param kart Et todimensjonalt kart representert som en array av strenger,
+     *             hvor hver tegn representerer en type plante i en parsell.
+     *             Kartet forventes å ha rektangulær form (alle strenger like lange).
+     * @return Totalpris for å gjerde inn alle identifiserte regioner på kartet.
+     *
+     * @throws IllegalArgumentException hvis kartet er tomt eller inneholder ujevne rader.
+     */
+
     public static int beregnTotalPris(String[] kart) {
         int totalPris = 0;
         boolean[][] besøkt = new boolean[kart.length][kart[0].length()]; // Holder styr på besøkte parseller.
@@ -51,14 +65,90 @@ public class Oppgave_12 {
         return totalPris;
     }
 
+    private static Region finnRegion(String[] kart, int rad, int kolonne, char planteType, boolean[][] besøkt) {
+        int areal = 0;
+        int omkrets = 0;
+
+        Set<Posisjon> regionPosisjoner = new HashSet<>(); // Bruker Set for å unngå duplikater
+        List<Posisjon> queue = new ArrayList<>(); //Bruker queue for å besøke alle elementer som henger sammen
+
+        queue.add(new Posisjon(rad, kolonne));
+        besøkt[rad][kolonne] = true;
+        regionPosisjoner.add(new Posisjon(rad, kolonne));
+
+        while (!queue.isEmpty()) {
+            Posisjon aktuellPosisjon = queue.remove(0);
+            int aktuellRad = aktuellPosisjon.rad;
+            int aktuellKolonne = aktuellPosisjon.kolonne;
+
+            areal++;
+            omkrets += beregnOmkrets(kart, aktuellRad, aktuellKolonne, planteType);
+
+            // Sjekk naboer (Opp, ned, venstre, høyre)
+            int[][] naboer = {{-1,0}, {1,0}, {0,-1}, {0,1}};
+            for (int[] nabo : naboer) {
+                int nyRad = aktuellRad + nabo[0];
+                int nyKolonne = aktuellKolonne + nabo[1];
+                // sjekker om en nabo
+                if (erGyldigPosisjon(kart, nyRad, nyKolonne) &&
+                kart[nyRad].charAt(nyKolonne) == planteType
+                && !besøkt[nyRad][nyKolonne]) {
+                    queue.add(new Posisjon(nyRad, nyKolonne));
+                    besøkt[nyRad][nyKolonne] = true;
+                    regionPosisjoner.add(new Posisjon(nyRad, nyKolonne));
+                }
+            }
+        }
+
+        // Juster omkretsen for interne kanter (mellom regionens celler)
+        int internOmkrets = 0;
+        for (Posisjon pos : regionPosisjoner) {
+            int radP = pos.rad;
+            int kolonneP = pos.kolonne;
+            int[][] naboer = {{-1, 0}, {1, 0}, {0, -1}, {0, 1}};
+            for (int[] nabo : naboer) {
+                int nyRad = pos.rad + nabo[0];
+                int nyKolonne = pos.kolonne + nabo[1];
+                if (erGyldigPosisjon(kart, nyRad, nyKolonne)
+                    && kart[nyRad].charAt(nyKolonne) == planteType
+                        && regionPosisjoner.contains(new Posisjon(nyRad,nyKolonne))) {
+                    internOmkrets++;
+                }
+            }
+        }
+        omkrets -= (internOmkrets / 2);
+        return new Region(areal, omkrets);
+    }
+
+    private static int beregnOmkrets(String[] kart, int rad, int kolonne, char planteType) {
+        int omkrets = 0;
+        // Sjekk hver side av parsellen
+        int[][] sider = {{-1, 0}, {1, 0}, {0, -1}, {0, 1}};
+        for (int[] side : sider) {
+            int nyRad = rad + side[0];
+            int nyKolonne = kolonne + side[1];
+            if (!erGyldigPosisjon(kart, nyRad, nyKolonne) || kart[nyRad].charAt(nyKolonne) != planteType) {
+                omkrets++;
+            }
+        }
+        return omkrets;
+    }
+
+    private static boolean erGyldigPosisjon(String[] kart, int rad, int kolonne) {
+        return rad >= 0 && rad < kart.length && kolonne >= 0 && kolonne < kart[rad].length();
+    }
+
     private static class Region {
         private int areal;
+
         private int omkrets;
+
         public Region(int areal, int omkrets) {
             this.areal = areal;
             this.omkrets = omkrets;
         }
     }
+
     private static class Posisjon {
         private int rad;
         private int kolonne;
@@ -85,8 +175,10 @@ public class Oppgave_12 {
             return result;
         }
     }
-    private
+
     public static void main(String[] args) {
 
+        String[] kart1 = {"AAAA", "BBCD", "BBCC", "EEEC"};
+        System.out.println("Total pris for kart1: " + beregnTotalPris(kart1)); // Forventet: 94
     }
 }
