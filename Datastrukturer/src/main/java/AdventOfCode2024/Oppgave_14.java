@@ -1,6 +1,9 @@
 package AdventOfCode2024;
 
-import java.awt.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /*
 Oppgave: Toalett-redoubt Sikkerhetsfaktor
@@ -75,7 +78,7 @@ public class Oppgave_14 {
      * @param simulationTime Antall sekunder simuleringen skal kjøre
      * @param robotData      Liste med rådata som beskriver robotene
      */
-    public Oppgave_14(int roomWidth, int roomHeight, int simulationTime, List<Robot> robotData) {
+    public Oppgave_14(int roomWidth, int roomHeight, int simulationTime, List<String> robotData) {
         this.roomWidth = roomWidth;
         this.roomHeight = roomHeight;
         this.simulationTime = simulationTime;
@@ -106,17 +109,124 @@ public class Oppgave_14 {
             return y;
         }
         public void move(int roomWidth, int roomHeight) {
+            // denne metoden telelporterer tilbake på x aksen hvis roboten går utenfor
             this.x = (this.x + this.vx) % roomWidth;
             if (this.x < 0) {
                 this.x += roomWidth;
             }
+            // Denne metoden teleporterer tilbake på y aksen hvis roboten går utenfor
             this.y = (this.y + this.vy) % roomHeight;
             if (this.y < 0) {
                 this.y += roomHeight;
             }
         }
+        @Override
+        public String toString() {
+            return "Robot{" +
+                    "x=" + x +
+                    ", y=" + y +
+                    ", vx=" + vx +
+                    ", vy=" + vy +
+                    '}';
+        }
     }
-    public static void main(String[] args) {
+    /**
+     * Parser en liste med tekstlinjer som beskriver roboter, og konverterer dem til Robot-objekter.
+     * <p>
+     * Hver tekstlinje må ha formatet:
+     * {@code p=<x>,<y> v=<vx>,<vy>}
+     * der alle verdier er tall (heltall eller desimaltall), og vx/vy kan være negative.
+     *
+     * Eksempel:
+     * {@code p=2,4 v=2,-3}
+     *
+     * @param robotData Liste med robot-informasjon som tekst
+     * @return Liste med Robot-objekter som er konstruert fra inputen
+     */
+    private List<Robot> parseRobots(List<String> robotData) {
+        // Tom liste som skal fylles med ferdige Robot-objekter
+        List<Robot> robotList = new ArrayList<>();
 
+        // Regex-mønster som fanger x, y, vx, vy fra teksten
+        Pattern pattern = Pattern.compile(
+                "p=(?<x>\\d+(?:\\.\\d+)?)," +       // Posisjon x (f.eks. 2 eller 2.5)
+                        "(?<y>\\d+(?:\\.\\d+)?) " +         // Posisjon y
+                        "v=(?<vx>-?\\d+(?:\\.\\d+)?)," +    // Hastighet vx (kan være negativ)
+                        "(?<vy>-?\\d+(?:\\.\\d+)?)"         // Hastighet vy (kan være negativ)
+        );
+
+        // Gå gjennom hver tekstlinje i listen
+        for (String data : robotData) {
+            // Sjekk om linjen matcher regex-mønsteret
+            Matcher matcher = pattern.matcher(data);
+
+            if (matcher.matches()) {
+                // Trekk ut verdiene fra named groups
+                double x = Double.parseDouble(matcher.group("x"));
+                double y = Double.parseDouble(matcher.group("y"));
+                double vx = Double.parseDouble(matcher.group("vx"));
+                double vy = Double.parseDouble(matcher.group("vy"));
+
+                // Lag en ny robot og legg den til i listen
+                robotList.add(new Robot(x, y, vx, vy));
+            } else {
+                System.err.println("Invalid robot data format: " + data);
+            }
+        }
+
+        // Returner den ferdige listen med roboter
+        return robotList;
+    }
+
+    public long calculateSafetyFactor() {
+        // Simuler bevegelse for alle roboter i 100 sekunder
+        for (int i = 0; i < simulationTime; i++) {
+            for (Robot robot : robots) {
+                robot.move(roomWidth, roomHeight); // Flytter robot og wrap-er hvis den går ut av rommet
+            }
+        }
+        // Tell roboter i hver kvadrant
+        int quadrant1Count = 0;
+        int quadrant2Count = 0;
+        int quadrant3Count = 0;
+        int quadrant4Count = 0;
+
+        double midX = (double) roomWidth / 2;
+        double midY = (double) roomHeight / 2;
+        for (Robot robot : robots) {
+            double x = robot.getX();
+            double y = robot.getY();
+
+            if (x < midX && y < midY) {
+                quadrant1Count++;
+            } else if (x > midX && y < midY) {
+                quadrant2Count++;
+            } else if (x < midX && y > midY) {
+                quadrant3Count++;
+            } else if (x > midX && y > midY) {
+                quadrant4Count++;
+            }
+        }
+        return (long) quadrant1Count * quadrant2Count * quadrant3Count * quadrant4Count;
+    }
+
+    public static void main(String[] args) {
+        List<String> robotData = List.of(
+                "p=0,4 v=3,-3",
+                "p=6,3 v=-1,-3",
+                "p=10,3 v=-1,2",
+                "p=2,0 v=2,-1",
+                "p=0,0 v=1,3",
+                "p=3,0 v=-2,-2",
+                "p=7,6 v=-1,-3",
+                "p=3,0 v=-1,-2",
+                "p=9,3 v=2,3",
+                "p=7,3 v=-1,2",
+                "p=2,4 v=2,-3",
+                "p=9,5 v=-3,-3"
+        );
+        Oppgave_14 oppgave14 = new Oppgave_14(11,7,100,robotData);
+        long safetyFactor = oppgave14.calculateSafetyFactor();
+        System.out.println("Safety Factor: " + safetyFactor);
     }
 }
