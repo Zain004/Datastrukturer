@@ -125,9 +125,9 @@ public class Oppgave_13 {
 
             // Lag ButtonConfig-objekt for hver knapp
             if ("A".equals(buttonName)) {
-                buttonA = new ButtonConfig(xMove, yMove);
+                buttonA = new ButtonConfig(xMove, yMove, 3);
             } else if ("B".equals(buttonName)) {
-                buttonB = new ButtonConfig(xMove, yMove);
+                buttonB = new ButtonConfig(xMove, yMove, 1);
             }
         }
 
@@ -170,7 +170,7 @@ public class Oppgave_13 {
                  }
              }
          }
-         return bestSolution;
+        return bestSolution;
     }
 
     // ➕ RECORDS (immutable datastrukturer)
@@ -190,6 +190,16 @@ public class Oppgave_13 {
     // Løsning for en enkelt maskin: hvor mange tokens, og hvor mange trykk på hver knapp
     private record Solution(int tokens, int aPresses, int bPresses) {}
     public static void main(String[] args) {
+        List<String> machineData = List.of(
+                "Button A: X+94, Y+34\nButton B: X+22, Y+67\nPrize: X=8400, Y=5400",
+                "Button A: X+26, Y+66\nButton B: X+67, Y+21\nPrize: X=12748, Y=12176",
+                "Button A: X+17, Y+86\nButton B: X+84, Y+37\nPrize: X=7870, Y=6450",
+                "Button A: X+69, Y+23\nButton B: X+27, Y+71\nPrize: X=18641, Y=10279"
+        );
 
+        Result result = optimize(machineData);
+
+        System.out.println("Antall premier vunnet: " + result.prizesWon);
+        System.out.println("Minimum antall poletter brukt: " + result.totalTokens);
     }
 }
