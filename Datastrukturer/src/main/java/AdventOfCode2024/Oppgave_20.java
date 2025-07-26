@@ -4,9 +4,7 @@ import javax.swing.text.Position;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 
 /*
 Oppgave: Juksekoder på Racerbanen
@@ -93,11 +91,11 @@ public class Oppgave_20 {
     private static final int MAX_CHEAT_STEPS = 2;
     private static final int MIN_SAVING = 100;
 
-    private char[][] map;
-    private int width;
-    private int height;
-    private Position start;
-    private Position end;
+    private static char[][] map;
+    private static int width;
+    private static int height;
+    private static Position start;
+    private static Position end;
 
     private static class Position {
         private int row, col;
@@ -179,45 +177,34 @@ public class Oppgave_20 {
     public int solve() {
         // Finn den korteste vanlige veien uten juks
         int shortestPathWithoutCheat = findShortestPath(start, end, false);
-
         // Teller antall gyldige jukseruter som gir ønsket besparelse
         int savingCheats = 0;
-
         // Iterer gjennom alle mulige startposisjoner i kartet
         for (int row = 0; row < height; row++) {
             for (int col = 0; col < width; col++) {
-
                 // Hopper over vegger – man kan ikke starte et juks fra en vegg
                 if (map[row][col] == Wall) continue;
-
                 Position cheatStart = new Position(row, col);
-
                 // Undersøker alle posisjoner inntil 3 ruter unna (i alle retninger, inkludert diagonalt)
                 // Math.max / min sikrer at vi ikke går utenfor rutenettet
                 for (int endRow = Math.max(0, row - 3); endRow < Math.min(height, row + 4); endRow++) {
                     for (int endCol = Math.max(0, col - 3); endCol < Math.min(width, col + 4); endCol++) {
-
                         // Kan ikke avslutte jukset i en vegg
                         if (map[endRow][endCol] == Wall) continue;
-
                         Position cheatEnd = new Position(endRow, endCol);
-
                         // Finn korteste vei fra cheatStart til cheatEnd,
                         // tillatt å gå gjennom maks MAX_CHEAT_STEPS vegger
-                        int cheatPathLength = findShortestPathWithMaxWallSteps(cheatStart, cheatEnd, MAX_CHEAT_STEPS);
+                        int cheatPathLength = findShortestPathWithMaxWallSteps(cheatStart, cheatEnd, true);
 
                         // Hvis det finnes en gyldig juksesti mellom start og sluttpunkt
                         if (cheatPathLength != Integer.MAX_VALUE) {
 
                             // Finn vanlig korteste vei fra slutten av jukseruten til mål
                             int pathFromCheatEndToGoal = findShortestPath(new Position(endRow, endCol), end, false);
-
                             // Full lengde for jukseruten: juksesti + normalsti etter juks
                             int pathWithCheat = cheatPathLength + pathFromCheatEndToGoal;
-
                             // Beregn hvor mange skritt man sparer ved å jukse
                             int saving = shortestPathWithoutCheat - pathWithCheat;
-
                             // Hvis man sparer nok (over terskelverdi), regnes dette som en gyldig juks
                             if (saving >= MIN_SAVING) {
                                 savingCheats++;
@@ -227,7 +214,6 @@ public class Oppgave_20 {
                 }
             }
         }
-
         // Returnerer totalt antall nyttige jukseruter
         return savingCheats;
     }
@@ -242,7 +228,83 @@ public class Oppgave_20 {
      * @return lengden på den korteste veien, eller Integer.MAX_VALUE hvis ingen vei finnes
      */
     private int findShortestPath(Position start, Position end, boolean allowCheating) {
-        Queue<State>
+        Queue<State> queue = new LinkedList<>();
+        queue.offer(new State(start, 0)); // Starttilstand med distanse 0
+
+        Set<Position> visited = new HashSet<>(); // Holder styr på besøkte posisjoner
+        visited.add(start);
+
+        while (!queue.isEmpty()) {
+            State current = queue.poll();
+            Position currentPosition = current.position;
+            int currentDistance = current.distance;
+
+            if (currentPosition.equals(END)) {
+                return currentDistance; // Fant målposisjonen
+            }
+            // Utforsk naboer
+            for (int i = 0; i < NUMBER_OF_DIRECTIONS; i++) {
+                int newRow = currentPosition.row + DR[i];
+                int newCol = currentPosition.col + DC[i];
+                Position newPosition = new Position(newRow, newCol);
+                if (isValidPosition(newRow, newCol) && !visited.contains(newPosition)) {
+                    char cell = map[newRow][newCol];
+                    if (cell == Track || cell == END || cell == START || (allowCheating && cell == Wall)) {
+                        queue.offer(new State(newPosition, currentDistance + 1));
+                        visited.add(newPosition);
+                    }
+                }
+            }
+        }
+        return Integer.MAX_VALUE; //Ingen vei funnet
+    }
+
+    private static int findShortestPathWithMaxWallSteps(Position start, Position end, boolean allowCheating) {
+        Queue<CheatState> queue = new LinkedList<>();
+        queue.offer(new CheatState(start, 0,0));
+
+        Set<String> visited = new HashSet<>();
+        while (!queue.isEmpty()) {
+            CheatState current = queue.poll();
+            Position currentPosition = current.position;
+            int currentDistance = current.distance;
+            int wallSteps = current.wallSteps;
+
+            if(currentPosition.equals(END)) {
+                 return currentDistance;
+            }
+
+            String stateString = currentPosition.row + "," + currentPosition.col + "," + wallSteps;
+
+            if (visited.contains(stateString)) {
+                continue;
+            }
+
+            visited.add(stateString);
+
+            // Utforsk naboer
+            for (int i = 0; i < NUMBER_OF_DIRECTIONS; i++) {
+                int newRow = currentPosition.row + DR[i];
+                int newCol = currentPosition.col + DC[i];
+
+                Position newPosition = new Position(newRow, newCol);
+                if (isValidPosition(newRow, newCol)) {
+                    char cell = map[newRow][newCol];
+                    if (cell == Track || cell == END || cell == START) {
+                        // Hvis det er en vanllig rute, øk distansen og fortsett uten å øke veggtrinn
+                        queue.offer(new CheatState(newPosition, currentDistance +  1, wallSteps));
+                    } else if (cell == Wall && wallSteps < MAX_CHEAT_STEPS) {
+                        // Hvis det er en vegg og vi har igjen veggtrinn, øk både distanse og veggtrinn
+                        queue.offer(new CheatState(newPosition, currentDistance + 1, wallSteps + 1));
+                    }
+                }
+            }
+        }
+        return Integer.MAX_VALUE;
+    }
+
+    private static boolean isValidPosition(int row, int col) {
+        return row >= 0 && row < height && col >= 0 && col < width;
     }
 
     private static class State {
@@ -266,7 +328,11 @@ public class Oppgave_20 {
     }
 
 
-    public static void main(String[] args) {
-
+    public static void main(String[] args) throws IOException {
+        String filePath = "C:\\Github\\Datastrukturer\\Datastrukturer\\src\\map.txt"; // Eller "src/map.txt"
+        System.out.println("Trying to load map from: " + filePath);
+        Oppgave_20 oppgave20 = new Oppgave_20(filePath);
+        int result = oppgave20.solve();
+        System.out.println("Number of cheat codes that save at least 100 picoseconds: " + result);
     }
 }
