@@ -1,4 +1,10 @@
 package AdventOfCode2024;
+
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
 /*
 ## Oppgave: Apemarkedets Hemmeligheter
 
@@ -71,8 +77,75 @@ Lykke til med å forutse apemarkedet!
 
  */
 public class Oppgave_22 {
+    private static final int MODULO = 16777216;
+    private static final int ITERATIONS = 2000;
+
+    public static long calculateSumOf2000thSecrets(List<Long> initialSecrets) {
+        long totalSum = 0;
+        for (long initialSecret : initialSecrets) {
+            long finalSecret = generateSecretSequence(initialSecret, ITERATIONS);
+            totalSum += finalSecret;
+        }
+        return totalSum;
+    }
+
+    /**
+     * Genererer en sekvens av hemmelige tall basert på den gitte algoritmen.
+     *
+     * @param initialSecret Det initiale hemmelige tallet.
+     * @param iterations Antall iterasjoner for å generere nye hemmelige tall.
+     * @return Det hemmelige tallet etter å ha kjørt alle iterasjonene.
+     */
+    public static long generateSecretSequence(long initialSecret, int iterations) {
+        long currentSecret = initialSecret;
+        for (int i = 0; i < iterations; i++) {
+            currentSecret = generateNextSecret(currentSecret);
+        }
+        return currentSecret;
+    }
+
+    /**
+     * Genererer det neste hemmelige tallet i sekvensen basert på det nåværende hemmelige tallet.
+     *
+     * @param currentSecret Det nåværende hemmelige tallet.
+     * @return Det neste hemmelige tallet i sekvensen.
+     */
+    private static long generateNextSecret(long currentSecret) {
+        currentSecret = phase1(currentSecret);
+        currentSecret = phase2(currentSecret);
+        currentSecret = phase3(currentSecret);
+        return currentSecret;
+    }
+
+    private static long phase1(long secret) {
+        long multiplied = secret * 64;
+        secret ^= multiplied;
+        secret %= MODULO;
+        return secret;
+    }
+
+    private static long phase2(long secret) {
+        long divided = secret / 32;
+        secret ^= divided;
+        secret %= MODULO;
+        return secret;
+    }
+
+    private static long phase3(long secret) {
+        long multiplied = secret * 2048;
+        secret ^= multiplied;
+        secret %= MODULO;
+        return secret;
+    }
 
     public static void main(String[] args) {
+        List<Long> initialSecrets = new ArrayList<>();
+        initialSecrets.add(1L);
+        initialSecrets.add(10L);
+        initialSecrets.add(100L);
+        initialSecrets.add(2024L);
 
+        long sumOf2000thSecrets = calculateSumOf2000thSecrets(initialSecrets);
+        System.out.println("Summen av det 2000. hemmelige tallet: " + sumOf2000thSecrets);
     }
 }
