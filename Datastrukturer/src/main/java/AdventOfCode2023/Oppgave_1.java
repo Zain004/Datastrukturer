@@ -49,6 +49,8 @@ Skriv et program eller en funksjon som tar et kalibreringsdokument (som en liste
  */
 
 
+import AdventOfCode2024.Oppgave_25;
+
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -76,25 +78,42 @@ public class Oppgave_1 {
     /**
      * Henter ut kalibreringsverdien fra en enkelt linje i kalibreringsdokumentet.
      *
-     * @param linje Linjen som skal behandles. Kan ikke være null eller tom.
+     * @param line Linjen som skal behandles. Kan ikke være null eller tom.
      * @return Kalibreringsverdien for linjen.
      * @throws IllegalArgumentException hvis linjen er null, tom eller ikke inneholder sifre.
      */
     private int extractCalibrationValue(String line) {
         if (line == null || line.isEmpty()) {
-            throw new IllegalArgumentException("Calibration line cannot null or empty");;
+            throw new IllegalArgumentException("Calibration line cannot null or empty");
         }
 
         Matcher matcher = DIGIT_PATTERN.matcher(line);
 
-        if (!matcher.matches()) {
+        if (!matcher.find()) {
             throw new IllegalArgumentException("Invalid calibration line: " + line);
         }
 
-        String firstDigit = matcher.group(); // Første siffer funnet
+        String firstDigit = matcher.group(); // Finner det første sifferet
         String lastDigit = firstDigit; // Default to the first digit if only one is present.
+
+        while(matcher.find()) {
+            lastDigit = matcher.group();
+        }
+
+        try {
+            return Integer.parseInt(firstDigit + lastDigit);
+        } catch (NumberFormatException e) {
+            throw new IllegalArgumentException("Invalid calibration line: " + line);
+        }
     }
     public static void main(String[] args) {
+        Oppgave_1 processor = new Oppgave_1();
+        List<String> document = List.of("hgfndfg1h", "trht9823d", "tg4h5gj2jk");
+        int sum = processor.calculateCalibrationSum(document);
+        System.out.println("Calibration sum: " + sum);
 
+        // Example of handling null and empty documents.
+        System.out.println("Null Document Sum: " + processor.calculateCalibrationSum(null));
+        System.out.println("Empty Document Sum: " + processor.calculateCalibrationSum(List.of()));
     }
 }
